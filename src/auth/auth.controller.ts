@@ -7,9 +7,12 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { prisma } from '@/lib/prisma';
+import BaseController from '@/lib/controllers/base.controller';
+import { UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard } from './guards/jwt.guard';
 
 @Controller('auth')
-export class AuthController {
+export class AuthController{
     constructor(private authService:AuthService){}
     //register
     @Post('register')
@@ -42,6 +45,12 @@ export class AuthController {
     @Post('reset-password')
     resetPassword(@Body() dto:ResetPasswordDto){
         return this.authService.resetPassword(dto)
+    }
+
+    @Post('logout')
+    @UseGuards(JwtAuthGuard)
+    logout(@Req() req){
+        return this.authService.logout(req)
     }
 
     @Get("test")
