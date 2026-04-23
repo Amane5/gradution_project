@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -25,7 +25,7 @@ export class AuthService {
             where: {email: normalizedEmail}
         })
         if(existingUser){
-            throw new BadRequestException({
+            throw new UnprocessableEntityException({
                 message: 'Email already exists',
                 error: 'EMAIL_EXISTS'
               });
@@ -36,7 +36,7 @@ export class AuthService {
         });
         
         if (existingUsername) {
-            throw new BadRequestException({
+            throw new UnprocessableEntityException({
                 message: 'Username already exists',
                 error: 'USERNAME_EXISTS'
               });;
@@ -87,7 +87,7 @@ export class AuthService {
             where : {email : email.toLowerCase()}
         })
         if(!user){
-            throw new BadRequestException({
+            throw new NotFoundException({
                 message: 'User not found',
                 error: 'USER_NOT_FOUND'
               });
@@ -142,7 +142,7 @@ export class AuthService {
             where : {email : email.toLowerCase()}
         })
         if(!user){
-            throw new BadRequestException({
+            throw new NotFoundException({
                 message: 'User not found',
                 error: 'USER_NOT_FOUND'
               });
@@ -186,7 +186,7 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new BadRequestException({
+            throw new UnauthorizedException({
                 message: 'Invalid username or password',
                 error: 'INVALID_USERNAME_OR_PASSWORD'
               });
@@ -195,7 +195,7 @@ export class AuthService {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            throw new BadRequestException({
+            throw new UnauthorizedException({
                 message: 'Invalid username or password',
                 error: 'INVALID_USERNAME_OR_PASSWORD'
               });
@@ -209,7 +209,7 @@ export class AuthService {
         const token = this.jwtService.sign(payload)
 
         if (user.type === 'parent' && !user.isVerified) {
-            throw new BadRequestException({
+            throw new ForbiddenException({
                 message: 'Verify your email first',
                 error: 'EMAIL_NOT_VERIFIED'
               });
@@ -229,7 +229,7 @@ export class AuthService {
             where : {email : email.toLowerCase()}
         })
         if(!user){
-            throw new BadRequestException({
+            throw new NotFoundException({
                 message: 'User not found',
                 error: 'USER_NOT_FOUND'
               });
@@ -262,7 +262,7 @@ export class AuthService {
             where: {email: email.toLowerCase()}
         })
         if(!user){
-            throw new BadRequestException({
+            throw new NotFoundException({
                 message: 'User not found',
                 error: 'USER_NOT_FOUND'
               });        }

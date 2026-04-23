@@ -12,6 +12,8 @@ import { EmailService } from '@/email/email.service';
       secret:'SECRET_KEY',
       signOptions: {expiresIn: '1d'}
     })
-  ]
+  ],
+  exports:[JwtModule]
+
 })
 export class AuthModule {}

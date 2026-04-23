@@ -30,15 +30,6 @@ import {
         }
       }
   
-      //  Prisma Unique Error
-      else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-        if (exception.code === 'P2002') {
-          status = 400;
-          message = 'Duplicate field value';
-          error = 'DUPLICATE_FIELD';
-        }
-      }
-  
       //  Validation Errors (class-validator)
       else if (Array.isArray(exception?.response?.message)) {
         status = 422;
@@ -48,7 +39,7 @@ import {
   
       // fallback
       else {
-        console.error('🔥 UNKNOWN ERROR:', exception);
+        console.error('UNKNOWN ERROR:', exception);
       }
   
       response.status(status).json({

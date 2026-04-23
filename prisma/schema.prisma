@@ -22,6 +22,12 @@ model User {
   type       String
   isVerified Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+   birthDate  DateTime?
+   parentId   Int?
+
+  parent     User?    @relation("ParentChildren", fields: [parentId], references: [id])
+  children   User[]   @relation("ParentChildren")
 }
 
 model Otp {

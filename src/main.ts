@@ -8,6 +8,10 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: 'http://192.168.0.209:8080', 
+    credentials: true,
+  });
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalPipes(new ValidationPipe());

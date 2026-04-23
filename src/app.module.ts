@@ -5,9 +5,10 @@ import { QuestionModule } from './question/question.module';
 import { AiModule } from './ai/ai.module';
 import { RagModule } from './rag/rag.module';
 import { AuthModule } from './auth/auth.module';
+import { ChildrenModule } from './children/children.module';
 
 
 @Module({
-  imports: [QuestionModule, AiModule, RagModule, AuthModule],
+  imports: [QuestionModule, AiModule, RagModule, AuthModule, ChildrenModule],
 })
 export class AppModule {}
