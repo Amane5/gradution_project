@@ -25,10 +25,18 @@ export class QuestionService {
         return age;
     }
 
-    async handleQuestion(body : AskQuestionDto , question: string , childId: number){
+    private async mockImageAnalysis(imagePath: string) {
+        return `User uploaded an image from path: ${imagePath}. Describe it for a child in simple terms.`;
+    }
 
-        if(!body.question || body.question.trim() === ''){
-            throw new BadRequestException("Qustion is required")
+    private async mockSpeechToText(audioPath: string) {
+        return "This is a mock transcription of the audio question";
+      }
+
+    async handleQuestion(body : AskQuestionDto , question: string , childId: number, files?: any[]){
+
+        if((!body.question || body.question.trim() === '') && !files){
+            throw new BadRequestException("Qustion or file is required")
         }
 
 
@@ -51,29 +59,43 @@ export class QuestionService {
           }
           
         const age = this.calculateAge(child.birthDate);
-        const context = this.ragService.findRelevantContent(question)
-        console.log("Context", context)
-        const answer = await this.aiService.generateAnswerWithContext(question, context , age)
-
+        let finalQuestion = question || ''
+        if (files && files.length>0) {
+            for(const file of files){
+                if(file.mimetype.startsWith('audio')){
+                    const audioText = await this.mockSpeechToText(file.path)
+                    finalQuestion = audioText
+                }
+                if(file.mimetype.startsWith('image')){
+                    const imageContext = await this.mockImageAnalysis(file.path);
+                    finalQuestion = [finalQuestion, imageContext]
+                    .filter(Boolean)
+                    .join(' ');
+                }
+            }
+            }
+            
+        const context = this.ragService.findRelevantContent(finalQuestion)
+        const answer = await this.aiService.generateAnswerWithContext(finalQuestion, context , age)
         let conversationId = body.conversationId;
-
         if (!conversationId) {
-        const title = await this.aiService.generateTitle(question)
-        const newConversation = await prisma.conversation.create({
-            data: {
-            childId: childId,
-            title:title
-            },
-        });
-
-        conversationId = newConversation.id;
-        }
+            const title = await this.aiService.generateTitle(question)
+            const newConversation = await prisma.conversation.create({
+                data: {
+                childId: childId,
+                title:title
+                },
+            });
+    
+            conversationId = newConversation.id;
+        }    
+        
         await prisma.question.create({
             data:{
-                question,
+                question: finalQuestion,
                 answer,
-                childId: childId,
-                conversationId: conversationId
+                childId,
+                conversationId
             }
         })
         console.log("Question:" , question)
@@ -85,6 +107,7 @@ export class QuestionService {
             quiz: "Can you answer this?",
         }
     }
+
 
     async getConversationMessages(conversationId: number, childId:number) {
         const messages = await prisma.question.findMany({

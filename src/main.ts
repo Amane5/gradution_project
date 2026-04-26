@@ -9,12 +9,15 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: 'http://192.168.0.209:8080', 
+    origin: ["http://localhost:8080", "http://192.168.0.209:8080"],
     credentials: true,
   });
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    transform:true,
+    whitelist:true
+  }));
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

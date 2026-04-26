@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 
 @Injectable()
@@ -18,19 +18,49 @@ export class ConversationService {
         }
     }
 
-    async getConversations(childId:number){
+    async getConversations(childId: number) {
         const conversations = await prisma.conversation.findMany({
-            where:{childId},
-            orderBy:{createdAt:"desc"},
-            select:{
-                id:true,
-                title:true,
-                createdAt:true
-            }
-        })
-        return{
-            message:"Conversation fetched",
-            data:conversations
+          where: { childId },
+          include: {
+            questions: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      
+        return {
+          message: 'Conversation fetched',
+          data: conversations.map(conv => ({
+            id: conv.id,
+            title: conv.title || `Conversation ${conv.id}`,
+            lastActivity: conv.questions[0]?.createdAt ?? conv.createdAt,
+          })),
+        };
+      }
+
+      async deleteConversation(conversationId: number, childId: number) {
+        try {
+          const conv = await prisma.conversation.findFirst({
+            where: { id: conversationId, childId },
+          });
+      
+          if (!conv) throw new NotFoundException('Conversation not found');
+      
+          await prisma.question.deleteMany({
+            where: { conversationId },
+          });
+      
+          await prisma.conversation.delete({
+            where: { id: conversationId },
+          });
+      
+          return { message: 'Conversation deleted' };
+        } catch (err) {
+          console.log('DELETE ERROR:', err);
+          throw err;
         }
-    }
+      }
+    
 }

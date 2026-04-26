@@ -4,10 +4,7 @@ export class AskQuestionDto {
   @IsString()
   question: string;
 
-  @IsInt()
-  childId: number;
-
   @IsOptional()
-  @IsInt()
+//   @IsInt()
   conversationId?: number; 
 }

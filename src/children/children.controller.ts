@@ -55,8 +55,4 @@ export class ChildrenController {
         return this.childrenService.getAccount(req.user.sub)
     }
 
-    @Get('history/:childId')
-    getHistory(@Param('childId') childId:string){
-      return this.childrenService.getHistory(Number(childId))
-    }
 }
