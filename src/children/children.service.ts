@@ -143,4 +143,15 @@ export class ChildrenService {
         data
       }
     }
+
+    async getHistory(childId:number){
+      const history = await prisma.question.findMany({
+        where:{childId},
+        orderBy:{createdAt: 'desc'}
+      })
+      return{
+        message:'History fetched',
+        data: history
+      }
+    }
 }

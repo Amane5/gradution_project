@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AiService } from 'src/ai/ai.service';
 import { RagService } from 'src/rag/rag.service';
 import { AskQuestionDto } from './dto/ask-question.dto';
+import { prisma } from '@/lib/prisma';
 
 @Injectable()
 export class QuestionService {
@@ -10,28 +11,71 @@ export class QuestionService {
         private readonly ragService:RagService
         ){}
 
+    private calculateAge(birthDate: Date): number {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        
+        return age;
+    }
+
     async handleQuestion(body : AskQuestionDto , question: string , childId: number){
 
         if(!body.question || body.question.trim() === ''){
             throw new BadRequestException("Qustion is required")
         }
-        if(!body.childId){
-            throw new BadRequestException("child id is required")
+
+
+        const child = await prisma.user.findFirst({
+            where:{
+                id: childId,
+                type:'child'
+            }
+        })
+        
+        if(!child){
+            throw new NotFoundException("Child not found")
         }
 
-        const children = [
-            {id: 1 , age: 5},
-            {id: 2 , age: 8}
-        ]
-        
-        const child = children.find(c => c.id === body.childId)
-        if(!child){
-            throw new BadRequestException("Child not found")
-        }
-        const age = child.age
+        if (!child.birthDate) {
+            throw new BadRequestException({
+              message: 'Child birthDate is missing',
+              error: 'BIRTHDATE_REQUIRED',
+            });
+          }
+          
+        const age = this.calculateAge(child.birthDate);
         const context = this.ragService.findRelevantContent(question)
         console.log("Context", context)
         const answer = await this.aiService.generateAnswerWithContext(question, context , age)
+
+        let conversationId = body.conversationId;
+
+        if (!conversationId) {
+        const title = await this.aiService.generateTitle(question)
+        const newConversation = await prisma.conversation.create({
+            data: {
+            childId: childId,
+            title:title
+            },
+        });
+
+        conversationId = newConversation.id;
+        }
+        await prisma.question.create({
+            data:{
+                question,
+                answer,
+                childId: childId,
+                conversationId: conversationId
+            }
+        })
         console.log("Question:" , question)
         console.log("Context", context)
 
@@ -41,4 +85,22 @@ export class QuestionService {
             quiz: "Can you answer this?",
         }
     }
+
+    async getConversationMessages(conversationId: number, childId:number) {
+        const messages = await prisma.question.findMany({
+          where: { conversationId , childId},
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+            createdAt: true,
+          },
+        });
+      
+        return {
+          message: 'messages fetched',
+          data: messages,
+        };
+      }
 }

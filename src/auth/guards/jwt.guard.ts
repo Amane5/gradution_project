@@ -14,7 +14,7 @@ import {
     async canActivate(context: ExecutionContext): Promise<boolean> {
       const request = context.switchToHttp().getRequest();
       const authHeader = request.headers.authorization;
-  
+      console.log('🔥 AUTH HEADER:', authHeader);
       if (!authHeader) {
         throw new UnauthorizedException({
           message: 'No token provided',
@@ -23,7 +23,7 @@ import {
       }
   
       const token = authHeader.split(' ')[1];
-  
+      console.log('🔥 TOKEN:', token)
       //  check blacklist
       const isBlacklisted = await prisma.blacklistedToken.findUnique({
         where: { token },
@@ -38,8 +38,9 @@ import {
   
       try {
         const payload = this.jwtService.verify(token);
-  
+        console.log('🔥 JWT PAYLOAD:', payload)
         request.user = payload;
+
   
         return true;
       } catch {

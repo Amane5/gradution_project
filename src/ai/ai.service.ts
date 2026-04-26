@@ -83,4 +83,29 @@ export class AiService {
       Think about it carefully, and try to answer this:
       What do you think is the reason?`;
       }
+
+      async generateTitle(question: string): Promise<string> {
+        try {
+          const response = await this.openai.chat.completions.create({
+            model: 'gpt-4.1-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'Generate a very short title (max 5 words) for this question.',
+              },
+              {
+                role: 'user',
+                content: question,
+              },
+            ],
+          });
+      
+          return response.choices[0].message.content || 'New Chat';
+        } catch (error) {
+          console.error('TITLE AI ERROR:', error);
+      
+          // fallback
+          return question.split(' ').slice(0, 4).join(' ');
+        }
+      }
 }

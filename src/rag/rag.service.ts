@@ -6,7 +6,7 @@ export class RagService {
     findRelevantContent(question:string) : string {
         const lowerQuestion = question.toLowerCase()
         for(const item of knowledgeBase){
-            if(lowerQuestion.includes(item.topic)){
+            if (lowerQuestion.includes(item.topic) || item.content.includes(lowerQuestion)){
                 return item.content
             }
         }
