@@ -1,4 +1,10 @@
+import { IsInt, IsOptional, IsString } from 'class-validator';
+
 export class CreateConversationDto {
-    childId: number;
-    question: string;
-  }
+  @IsInt()
+  childId: number;
+
+  @IsOptional()
+  @IsString()
+  question?: string;
+}

@@ -93,6 +93,13 @@ export class ChildrenService {
           error: 'INVALID_PARENT',
         });
       }
+      if (!dto.username || !dto.password || !dto.firstName) {
+        throw new UnprocessableEntityException({
+          message: 'Missing required fields',
+          error: 'MISSING_FIELDS',
+        });
+      }
+      console.log("DTO:", dto)
         const existingChild = await prisma.user.findUnique({
             where: {username: dto.username}
         })

@@ -4,6 +4,8 @@ import { AskQuestionDto } from './dto/ask-question.dto';
 import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('ask')
 export class QuestionController {
@@ -11,7 +13,19 @@ export class QuestionController {
     
     @Post()
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FilesInterceptor('files', 5))
+    @UseInterceptors(
+        FilesInterceptor('files', 5, {
+          storage: diskStorage({
+            destination: './uploads',
+            filename: (req, file, cb) => {
+              const uniqueName =
+                Date.now() + '-' + Math.round(Math.random() * 1e9);
+      
+              cb(null, uniqueName + extname(file.originalname));
+            },
+          }),
+        }),
+      )
     async askQuestion(
     @Body() body: AskQuestionDto,
     @UploadedFiles() files: any[],
@@ -25,14 +39,6 @@ export class QuestionController {
         files,
     );
     }
-
-//     @Post()
-// @UseInterceptors(FileInterceptor('image'))
-// async askQuestion(@Req() req) {
-//   console.log(req.body);
-//   console.log(req.file);
-//   return req.body;
-// }
 
     @UseGuards(JwtAuthGuard)
     @Get(':conversationId/messages')

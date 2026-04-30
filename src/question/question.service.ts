@@ -25,14 +25,6 @@ export class QuestionService {
         return age;
     }
 
-    private async mockImageAnalysis(imagePath: string) {
-        return `User uploaded an image from path: ${imagePath}. Describe it for a child in simple terms.`;
-    }
-
-    private async mockSpeechToText(audioPath: string) {
-        return "This is a mock transcription of the audio question";
-      }
-
     async handleQuestion(body : AskQuestionDto , question: string , childId: number, files?: any[]){
 
         if((!body.question || body.question.trim() === '') && !files){
@@ -60,20 +52,27 @@ export class QuestionService {
           
         const age = this.calculateAge(child.birthDate);
         let finalQuestion = question || ''
+        let imageDescription = '';
+        let audioTranscription = '';
         if (files && files.length>0) {
             for(const file of files){
-                if(file.mimetype.startsWith('audio')){
-                    const audioText = await this.mockSpeechToText(file.path)
-                    finalQuestion = audioText
-                }
-                if(file.mimetype.startsWith('image')){
-                    const imageContext = await this.mockImageAnalysis(file.path);
-                    finalQuestion = [finalQuestion, imageContext]
-                    .filter(Boolean)
-                    .join(' ');
-                }
+                if (file.mimetype.startsWith('audio')) {
+                    audioTranscription = await this.aiService.speechToText(file.path);
+              
+                    finalQuestion = [finalQuestion, audioTranscription]
+                      .filter(Boolean)
+                      .join(' ');
+                  }
+              
+                  if (file.mimetype.startsWith('image')) {
+                    imageDescription = await this.aiService.analyzeImage(file.path, age);
+              
+                    finalQuestion = [finalQuestion, imageDescription]
+                      .filter(Boolean)
+                      .join(' ');
+                  }
             }
-            }
+        }
             
         const context = this.ragService.findRelevantContent(finalQuestion)
         const answer = await this.aiService.generateAnswerWithContext(finalQuestion, context , age)
@@ -88,11 +87,20 @@ export class QuestionService {
             });
     
             conversationId = newConversation.id;
-        }    
+        } 
+        
+        console.log("SAVE DATA:", {
+            question,
+            imageDescription,
+            audioTranscription
+          });
+          console.log("FINAL QUESTION:", finalQuestion);
         
         await prisma.question.create({
             data:{
-                question: finalQuestion,
+                question: question,
+                imageDescription: imageDescription || null,
+                voiceText: audioTranscription || null,
                 answer,
                 childId,
                 conversationId
@@ -103,9 +111,10 @@ export class QuestionService {
 
         return {
             explanation: answer,
-            imagePrompt: question,
-            quiz: "Can you answer this?",
-        }
+            question: question || null,
+            imageDescription,
+            audioTranscription,
+          };
     }
 
 
@@ -116,6 +125,8 @@ export class QuestionService {
           select: {
             id: true,
             question: true,
+            imageDescription: true,
+            voiceText: true,
             answer: true,
             createdAt: true,
           },

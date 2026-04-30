@@ -1,17 +1,22 @@
 import { prisma } from '@/lib/prisma';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
-
+import { AiService } from 'src/ai/ai.service';
 @Injectable()
 export class ConversationService {
+    constructor(private readonly aiService: AiService) {}
     async createConversation (dto:CreateConversationDto){
         const {childId, question}= dto
+        const title = question
+      ? await this.aiService.generateTitle(question)
+      : 'New Chat'
         const conversation = await prisma.conversation.create({
             data:{
                 childId,
-                title:question.slice(0,50)
+                title
             }
         })
+        console.log("DTO:", dto);
         return {
             message:"Conversation created",
             data: conversation
